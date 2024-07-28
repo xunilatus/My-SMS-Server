@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<style>
+		* {
+  box-sizing: border-box;
+}
+
+/* Create two unequal columns that floats next to each other */
+.column {
+  float: left;
+  padding: 10px;
+  height: 60vh; /* Set to full viewport height */
+  overflow: auto; /* Ensure scrollability if content overflows */
+}
+
+.left {
+  width: 50%;
+}
+
+.right {
+  width: 50%;
+}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+form {
+  width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+  background-color: #FCCFFF;
+}
+
+input {
+  width: 100%;
+}
+
+span {
+  display: block;
+}
+
+button {
+  float: right;
+}
+
+	</style>
+</head>
+<body>
+
+<h2>SMS MESSAGES</h2>
+
+<div class="row">
+	<div class="column left" style="background-color:#E1E3E7; overflow:auto;">
+		<h2>PHONE NUMBERS</h2>
+		<p><textarea id="currentTexts" rows="50" cols="70" ></textarea></p>
+
+		<!-- Other content -->
+	</div>
+	<div class="column right" style="background-color:#F9FBFF; overflow:auto;">
+		<p><textarea id="outputTextbox" rows="60" cols="80" readonly></textarea></p>
+	</div>
+</div>
+
+<!-- Your form and buttons -->
+<form id="myForm" method="POST" action="/message">
+	<label for="inputFieldPhone">Enter Phone Number</label>
+	<input type="text" id="inputFieldPhone" name="phoneNumber">
+	<label for="inputField">Enter Message:</label>
+	<input type="text" id="inputField" name="message">
+	<button type="submit">Send</button>
+</form>
+<h4>ipv4 public: <span id="public-ip-address"></span></h4>
+<h4>ipv4 Local: <span id="local-ip-address"></span></h4>
+<a href="https://www.whatsmyip.org/" target="_blank"/>https://www.whatsmyip.org/ </a>
+<br>
+<a href="https://pastebin.com/" target="_blank"/>https://pastebin.com/ </a>
+<br>
+<a href="https://imgur.com/upload" target="_blank"/>https://imgur.com/upload</a>
+<br>
+<a href="https://duckduckgo.com" target="_blank"/>https://duckduckgo.com</a>
+<br>
+<a href="https://yandex.com/" target="_blank"/>https://yandex.com</a>
+<br>
+<a href="https://climateviewer.org/3d/" target="_blank"/>https://climateviewer.org/3d//</a>
+<br>
+<a href="https://tempest.aos.wisc.edu/radar/" target="_blank"/>https://tempest.aos.wisc.edu/radar/</a>
+<br>
+<a href="https://www.pauljhurtado.com/US_Composite_Radar/" target="_blank"/>https://www.pauljhurtado.com/US_Composite_Radar/</a>
+<br>
+<a href="https://www.opencellid.org/" target="_blank"/>https://www.opencellid.org/</a>
+<br>
+<a href="https://www.scadacore.com/tools/rf-path/cell-tower-map-united-states/" target="_blank"/>https://www.scadacore.com/.../tower-map-united-states//</a>
+<br>
+<a href="https://www.cellmapper.net/" target="_blank"/>https://www.cellmapper.net/</a>
+<br>
+
+<button>UPLOAD</button>
+<button>DOWNLOAD</button>
+<button onclick="fetchSmsLogs()">SYNC SMS</button>
+<!-- Your JavaScript -->
+<script>
+	document.addEventListener('DOMContentLoaded', function() {
+        var outputTextbox = document.getElementById("outputTextbox");
+        var inputField = document.getElementById("inputField");
+        var inputFieldPhone = document.getElementById("inputFieldPhone"); // New input field
+        var myForm = document.getElementById("myForm");
+
+        // Load saved text from local storage
+        var savedText = localStorage.getItem("savedText");
+        if (savedText) {
+            outputTextbox.value = savedText;
+        }
+
+        // Add event listener for form submission
+        myForm.addEventListener("submit", function(event) {
+            event.preventDefault(); // Prevent default form submission behavior
+            var phoneNumber = inputFieldPhone.value;
+            var message = inputField.value;
+
+            // Call sendSMSMessage() to send the SMS
+            sendSMSMessage(phoneNumber, message);
+
+            // Append the message to the output textbox
+            outputTextbox.value += message + "\n";
+
+            // Save the updated text to local storage
+            localStorage.setItem("savedText", outputTextbox.value);
+
+            // Clear the input fields after submission
+            inputField.value = "";
+            inputFieldPhone.value = "";
+        });
+
+        // my sendSMSMessage function is already using responseText it works well for sending messages from another text field
+        function sendSMSMessage(phoneNumber, message) {
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/message", true);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === XMLHttpRequest.DONE) {
+                    if (xhr.status === 200) {
+                        // Server response received successfully
+                        var responseText = xhr.responseText;
+                        console.log("Server response: " + responseText);
+                        // You can update the DOM or display a confirmation message here
+                        // For example:
+                        alert("Message received from server");
+                    } else {
+                        // Error handling
+                        console.error("Error: Server response status " + xhr.status);
+                    }
+                }
+            };
+            xhr.send("phoneNumber=" + encodeURIComponent(phoneNumber) + "&message=" + encodeURIComponent(message));
+        }
+
+        function fetchListViewData() {
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/listview-data", true);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === XMLHttpRequest.DONE) {
+                    console.log("Request status:", xhr.status);
+                    console.log("Response text:", xhr.responseText);
+                    if (xhr.status === 200) {
+                        var listViewData = xhr.responseText; // Fetch the SMS logs
+                        updateCurrentTexts(listViewData); // Update the textarea with the fetched data
+                    } else {
+                        console.error("Error fetching ListView data: " + xhr.status);
+                    }
+                }
+            };
+            xhr.send(); // POST request with no additional data
+        }
+
+        function updateCurrentTexts(data) {
+            var currentTexts = document.getElementById("currentTexts"); // Ensure you have the correct ID
+            if (currentTexts) {
+                currentTexts.value = data; // Set the textarea content to the fetched data
+            }
+        }
+
+        fetchListViewData();
+
+        // Function to fetch and display the public IPv4 address
+        function fetchPublicIpAddress() {
+            fetch('https://api.ipify.org?format=json')
+                .then(response => response.json())
+                .then(data => {
+                    // Display the public IP address in an element with ID 'public-ip-address'
+                    var publicIpAddressElement = document.getElementById('public-ip-address');
+                    if (publicIpAddressElement) {
+                        publicIpAddressElement.textContent = data.ip;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching public IP address:', error);
+                });
+        }
+
+        // Function to get the local IP address
+        function fetchLocalIpAddress() {
+            var localIpAddressElement = document.getElementById('local-ip-address');
+            if (localIpAddressElement) {
+                localIpAddressElement.textContent = location.hostname;
+            }
+        }
+
+        // Call fetchPublicIpAddress and fetchLocalIpAddress when the page loads
+        fetchPublicIpAddress();
+        fetchLocalIpAddress();
+    });
+
+    // Fetch SMS logs when the page loads
+    document.addEventListener('DOMContentLoaded', fetchSmsLogs);
+
+    // Function to fetch SMS logs from the server
+    function fetchSmsLogs() {
+        fetch('/listview-data', { // Ensure correct server endpoint
+            method: 'POST',
+            headers: {
+                'Content-Type': 'text/plain', // Assuming server sends plain text
+            },
+            body: '', // POST request with no body content
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.text(); // Get the response text
+            } else {
+                throw new Error(`Request failed with status ${response.status}`);
+            }
+        })
+        .then(data => {
+            // Update the currentTexts textarea with the fetched data
+            const currentTexts = document.getElementById('currentTexts'); // Correct ID
+            if (currentTexts) {
+                currentTexts.value = data; // Set the textarea content to the fetched data
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching SMS logs:', error); // Handle errors
+        });
+    }
+
+</script>
+
+
+</body>
+</html>
